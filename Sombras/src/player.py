@@ -11,10 +11,10 @@ class Player:
     def __init__(self, x, y, sprite_gen):
         self.pos = pygame.math.Vector2(x, y)
         self.vel = pygame.math.Vector2(0, 0)
-        self.direction = 0  # Ángulo en grados (0=arriba, 90=derecha, etc.)
-        self.facing = 'down'  # 'up', 'down', 'left', 'right'
+        self.direction = 0  # Ángulo en grados (0=arriba, 90=derecha, y respectivamnte "referencia")
+        self.facing = 'down'  
         
-        self.state = 'idle'      # idle, walk, sneak, sprint
+        self.state = 'idle'      
         self.is_sneaking = False
         self.is_hiding = False
         self.is_sprinting = False
