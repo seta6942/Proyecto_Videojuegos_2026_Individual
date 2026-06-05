@@ -166,3 +166,4 @@ class TileMap:
             if rect.collidepoint(world_x, world_y):
                 return True
         return False
+#SETA
