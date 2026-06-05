@@ -15,7 +15,7 @@ class SpriteGenerator:
         self._drone_sprites = None
         self._tile_sprites = {}
         
-        # Usamos la ruta de sprites definida en settings.py
+        # Uso la ruta de sprites definida en settings.py
         self.sprites_dir = SPRITES_DIR
 
     # --- CARGA DE PERSONAJES ---
