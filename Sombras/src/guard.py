@@ -18,7 +18,7 @@ class Guard:
     
     # Colores del cono por estado
     CONE_COLORS = {
-        STATE_PATROL:     (0,   220,  60,  60),   # Verde semitransparente
+        STATE_PATROL:     (0,   220,  60,  60),   # Verde traslucido
         STATE_SUSPECT:    (255, 220,   0,  80),   # Amarillo
         STATE_CHASE:      (255,  30,  30, 100),   # Rojo
         STATE_INVESTIGATE:(255, 160,   0,  70),   # Naranja
@@ -32,7 +32,7 @@ class Guard:
         self.zone = zone
         self.guard_id = guard_id
         
-        self.facing_angle = 0.0   # ángulo en grados (0=derecha, 90=abajo...)
+        self.facing_angle = 0.0   # ángulo en grados (0=derecha, 90=abajo) Referencia
         self.facing = 'down'
         
         self.state = self.STATE_PATROL
