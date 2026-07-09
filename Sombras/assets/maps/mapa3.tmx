@@ -5,7 +5,7 @@
  </tileset>
  <tileset firstgid="1288" source="../tilesets/tileset_universidad.tsx"/>
  <imagelayer id="2" name="Capa de Imagen 1" offsetx="224" offsety="16">
-  <image source="../../../../../Mapas_Tiled/aa222.png" width="3840" height="3200"/>
+  <image source="../tilesets/aa222.png" width="3840" height="3200"/>
  </imagelayer>
  <layer id="1" name="Base" width="120" height="100">
   <data encoding="csv">

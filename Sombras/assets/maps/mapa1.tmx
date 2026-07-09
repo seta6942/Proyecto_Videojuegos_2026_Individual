@@ -2,10 +2,10 @@
 <map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="120" height="100" tilewidth="32" tileheight="32" infinite="0" nextlayerid="8" nextobjectid="109">
  <tileset firstgid="1" source="../tilesets/tileset_universidad.tsx"/>
  <tileset firstgid="4225" name="capa2" tilewidth="32" tileheight="32" tilecount="1320" columns="40">
-  <image source="../../../../../Mapas_Tiled/asfdfgh.png" width="1280" height="1067"/>
+  <image source="../tilesets/asfdfgh.png" width="1280" height="1067"/>
  </tileset>
  <tileset firstgid="5545" name="capa2" tilewidth="32" tileheight="32" tilecount="1287" columns="39">
-  <image source="../../../../../Mapas_Tiled/pppppp.png" width="1279" height="1066"/>
+  <image source="../tilesets/pppppp.png" width="1279" height="1066"/>
  </tileset>
  <layer id="1" name="Base" width="120" height="100">
   <data encoding="csv">
@@ -376,6 +376,6 @@
   </object>
  </objectgroup>
  <imagelayer id="5" name="Capa de Imagen 1" visible="0" offsetx="-37" offsety="500">
-  <image source="../../../../../Mapas_Tiled/mapa1-sanmarcos.png" width="3913" height="2154"/>
+  <image source="../tilesets/mapa1-sanmarcos.png" width="3913" height="2154"/>
  </imagelayer>
 </map>
