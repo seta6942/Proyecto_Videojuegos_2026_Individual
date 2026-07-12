@@ -2,8 +2,11 @@
 """
 Sombras en la UNMSM
 Punto de entrada principal del juego.
-Estudiante: Tapia Acosta Sandro Estanislao - FCM-UNMSM - 2026
 
+Estudiantes: 
+- Tapia Acosta Sandro Estanislao
+- Pariguana Angulo Carlos Josue 
+- Ibañez Sanchez Marlon Alexis.
 """
 
 import sys
