@@ -10,21 +10,22 @@ from src.settings import *
 from src.sprites import SpriteGenerator
 
 class Guard:
-    # Estados FSM
+    # Estados de la máquina de estados finitos (FSM)
     STATE_PATROL = 'patrol'
     STATE_SUSPECT = 'suspect'
     STATE_CHASE = 'chase'
     STATE_INVESTIGATE = 'investigate'
     
-    # Colores del cono por estado
+    # Paleta de colores para el cono según el estado
     CONE_COLORS = {
-        STATE_PATROL:     (0,   220,  60,  60),   # Verde traslucido
+        STATE_PATROL:     (0,   220,  60,  60),   # Verde translúcido
         STATE_SUSPECT:    (255, 220,   0,  80),   # Amarillo
         STATE_CHASE:      (255,  30,  30, 100),   # Rojo
         STATE_INVESTIGATE:(255, 160,   0,  70),   # Naranja
     }
     
     def __init__(self, x, y, patrol_points, zone, sprite_gen, guard_id=0):
+        # Posición y movimiento
         self.pos = pygame.math.Vector2(x, y)
         self.vel = pygame.math.Vector2(0, 0)
         self.patrol_points = [pygame.math.Vector2(p) for p in patrol_points]
@@ -32,33 +33,35 @@ class Guard:
         self.zone = zone
         self.guard_id = guard_id
         
-        self.facing_angle = 0.0   # ángulo en grados (0=derecha, 90=abajo) Referencia
+        # Orientación y dirección visual
+        self.facing_angle = 0.0   # ángulo en grados (0=derecha, 90=abajo)
         self.facing = 'down'
         
+        # Estado actual y anterior de la FSM
         self.state = self.STATE_PATROL
         self.prev_state = None
         
-        # Tiempos
+        # Gestión de tiempos
         self.state_timer = 0.0
         self.suspect_time = 1.5    # tiempo para entrar en persecución
         self.wait_timer = 0.0
         self.investigate_timer = 0.0
         
-        # Detección
-        self.alert_level = 0.0     # 0-1, nivel individual
+        # Sistema de detección
+        self.alert_level = 0.0     # 0-1, nivel individual de alerta
         self.last_seen_pos = None
         self.investigate_target = None
         
-        # Velocidad
+        # Velocidad de movimiento
         self.speed = GUARD_SPEED_PATROL
         
-        # Sprites
+        # Sistema de sprites y animación
         self.sprites = sprite_gen.get_guard_sprites()
         self.anim_frame = 0
         self.anim_timer = 0.0
         self.anim_speed = 0.14
         
-        # Hitbox
+        # Colisión y hitbox
         self.radius = GUARD_SIZE
         self.rect = pygame.Rect(
             int(self.pos.x) - self.radius,
@@ -67,23 +70,23 @@ class Guard:
             self.radius * 2
         )
         
-        # Aleatoriedad
+        # Comportamiento aleatorio en patrulla
         self.wait_on_arrive = random.uniform(1.0, 3.0)
         
-        # Cono de visión
+        # Parámetros sensoriales (visión y oído)
         self.vision_range = GUARD_VISION_RANGE
         self.vision_angle = GUARD_VISION_ANGLE
         self.hear_range = GUARD_HEAR_RANGE
         
-        # Cache de cono
+        # Cache del cono de visión para optimización
         self._cone_surface = None
         self._cone_dirty = True
 
     def update(self, dt, player, global_alert, collision_rects, all_guards):
-        """Actualiza la IA del guardia."""
+        """Actualiza el comportamiento y estado del guardia."""
         self.state_timer += dt
         
-        # Actualizar velocidad según alerta global
+        # Ajuste dinámico de velocidad según alerta global
         if global_alert >= ALERT_HIGH_THRESHOLD:
             self.speed = GUARD_SPEED_CHASE * 1.1
         elif global_alert >= ALERT_MED_THRESHOLD:
@@ -91,11 +94,11 @@ class Guard:
         else:
             self.speed = GUARD_SPEED_PATROL
             
-        # Detectar jugador
+        # Detección del jugador (visión y oído)
         can_see = self._can_see_player(player)
         can_hear = self._can_hear_player(player)
         
-        # FSM
+        # Máquina de estados finitos
         old_state = self.state
         
         if self.state == self.STATE_PATROL:
@@ -128,7 +131,7 @@ class Guard:
             self.alert_level = 1.0
             
             if not can_see:
-                # Perdió de vista, ir al último lugar visto
+                # Perdió de vista: va al último lugar donde vio al jugador
                 self.state = self.STATE_INVESTIGATE
                 self.investigate_target = self.last_seen_pos
                 self.state_timer = 0
@@ -147,16 +150,16 @@ class Guard:
                 self.state_timer = 0
                 self.alert_level = max(0, self.alert_level - dt * 0.2)
                 
-        # Registrar cambio de estado
+        # Actualizar cache si cambió el estado
         if old_state != self.state:
             self.state_timer = 0
             self._cone_dirty = True
             
-        # Actualizar rect
+        # Actualizar hitbox
         self.rect.x = int(self.pos.x) - self.radius
         self.rect.y = int(self.pos.y) - self.radius
         
-        # Animación
+        # Actualizar animación
         speed_len = self.vel.length()
         if speed_len > 0.1:
             self.anim_timer += dt
@@ -167,7 +170,7 @@ class Guard:
         return can_see, can_hear
 
     def _update_patrol(self, dt):
-        """Mueve al guardia por su ruta de patrulla."""
+        """Mueve al guardia a lo largo de su ruta de patrulla."""
         if not self.patrol_points:
             return
             
@@ -176,7 +179,7 @@ class Guard:
         dist = direction.length()
         
         if dist < 8:
-            # Llegó al punto, esperar y pasar al siguiente
+            # Llegó al punto: espera y luego continúa
             self.wait_timer += dt
             if self.wait_timer >= self.wait_on_arrive:
                 self.wait_timer = 0
@@ -190,7 +193,7 @@ class Guard:
             self._update_facing()
 
     def _update_move_to(self, dt, target_pos, collision_rects):
-        """Mueve al guardia hacia una posición objetivo."""
+        """Desplaza al guardia hacia una posición objetivo."""
         direction = target_pos - self.pos
         dist = direction.length()
         
@@ -199,7 +202,7 @@ class Guard:
             self.vel = direction
             new_pos = self.pos + self.vel
             
-            # Colisión simple
+            # Detección de colisiones
             test_rect = pygame.Rect(
                 new_pos.x - self.radius,
                 new_pos.y - self.radius,
@@ -214,7 +217,7 @@ class Guard:
             if not collides:
                 self.pos = new_pos
             else:
-                # Intenta desviar
+                # Intento de esquivar obstáculo
                 perp = pygame.math.Vector2(-direction.y, direction.x).normalize() * self.speed
                 alt_pos = self.pos + perp
                 test_rect2 = pygame.Rect(
@@ -230,7 +233,7 @@ class Guard:
             self.vel = pygame.math.Vector2(0, 0)
 
     def distract_to(self, target_pos, duration):
-        """Distrae al guardia hacia una posición (piedra/alarma de auto)."""
+        """Distrae al guardia hacia una posición específica (piedra/alarma)."""
         if self.state != self.STATE_CHASE:
             self.state = self.STATE_INVESTIGATE
             self.investigate_target = pygame.math.Vector2(target_pos)
@@ -239,12 +242,12 @@ class Guard:
             self._cone_dirty = True
 
     def _update_facing(self):
-        """Actualiza la dirección visual según la velocidad."""
+        """Actualiza la orientación visual según la dirección del movimiento."""
         if self.vel.length() > 0.1:
             angle = math.degrees(math.atan2(self.vel.y, self.vel.x))
             self.facing_angle = angle
             
-            # Cuadrante
+            # Determinar dirección cardinal
             if -45 <= angle < 45:
                 self.facing = 'right'
             elif 45 <= angle < 135:
@@ -255,7 +258,7 @@ class Guard:
                 self.facing = 'up'
 
     def _can_see_player(self, player):
-        """Detecta al jugador por visión (cono)."""
+        """Detecta al jugador mediante el cono de visión."""
         if player.is_hiding:
             return False
             
@@ -265,7 +268,7 @@ class Guard:
         if dist > self.vision_range:
             return False
             
-        # Ángulo del guardia en radianes
+        # Vector de dirección del guardia
         guard_rad = math.radians(self.facing_angle)
         forward = pygame.math.Vector2(math.cos(guard_rad), math.sin(guard_rad))
         
@@ -279,7 +282,7 @@ class Guard:
         return dot >= math.cos(half_angle)
 
     def _can_hear_player(self, player):
-        """Detecta al jugador por sonido."""
+        """Detecta al jugador mediante el sonido."""
         if player.noise_level <= 0.05:
             return False
             
@@ -288,8 +291,8 @@ class Guard:
         return dist <= effective_range
 
     def draw(self, screen, camera):
-        """Dibuja el cono de visión y el sprite del guardia."""
-        # Solo dibujar si es visible
+        """Renderiza el cono de visión y el sprite del guardia."""
+        # Verificar visibilidad en cámara
         if not camera.is_visible(self.pos.x, self.pos.y, 300):
             return
             
@@ -303,7 +306,7 @@ class Guard:
         pygame.draw.ellipse(shadow_surf, (0, 0, 0, 80), (0, 0, 30, 10))
         screen.blit(shadow_surf, (sx - 15, sy + 10))
         
-        # === SPRITE ===
+        # === SPRITE DEL GUARDIA ===
         state_to_action = {
             self.STATE_PATROL: 'patrol',
             self.STATE_SUSPECT: 'suspect',
@@ -314,7 +317,7 @@ class Guard:
         
         sprite_key = f"{self.facing}_{action}"
         
-        # Buscar los frames, si falla usa patrol por defecto
+        # Fallback a patrol si no encuentra los frames
         frames = self.sprites.get(sprite_key, self.sprites.get(f"{self.facing}_patrol", []))
         
         if frames:
@@ -323,7 +326,7 @@ class Guard:
             sprite_rect = sprite.get_rect(center=(sx, sy))
             screen.blit(sprite, sprite_rect)
             
-        # === INDICADOR DE ESTADO sobre la cabeza ===
+        # === INDICADORES DE ESTADO ===
         if self.state == self.STATE_SUSPECT:
             # Signo de interrogación amarillo
             font_small = pygame.font.SysFont('monospace', 18, bold=True)
@@ -341,7 +344,7 @@ class Guard:
         
         cone_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         
-        # Ángulo del guardia
+        # Calcular ángulos del cono
         base_angle = self.facing_angle
         half = self.vision_angle / 2
         
@@ -350,7 +353,7 @@ class Guard:
         if self.state == self.STATE_CHASE:
             vis_range *= 1.3
             
-        # Construir polígono del cono
+        # Generar polígono del cono
         segments = 20
         points = [(sx, sy)]
         for i in range(segments + 1):
@@ -367,6 +370,7 @@ class Guard:
         screen.blit(cone_surf, (0, 0))
 
     def get_world_rect(self):
+        """Retorna el rectángulo de colisión en coordenadas del mundo."""
         return pygame.Rect(
             int(self.pos.x) - self.radius,
             int(self.pos.y) - self.radius,
@@ -375,6 +379,6 @@ class Guard:
         )
 
     def catches_player(self, player):
-        """Verifica si el guardia atrapa al jugador (distancia < 20px)."""
+        """Determina si el guardia atrapa al jugador (distancia < 20px)."""
         dist = (self.pos - player.pos).length()
         return dist < 20 and self.state == self.STATE_CHASE
