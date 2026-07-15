@@ -7,6 +7,7 @@ from src.settings import *
 
 class Camera:
     def __init__(self, map_width, map_height):
+        # Inicialización de desplazamiento y límites del mapa
         self.offset_x = 0.0
         self.offset_y = 0.0
         self.map_width = map_width
@@ -14,18 +15,19 @@ class Camera:
     
     def update(self, target_pos):
         """Actualiza la cámara para seguir al objetivo con suavizado."""
+        # Calculamos la posición objetivo centrando al jugador
         target_x = target_pos.x - SCREEN_WIDTH // 2
         target_y = target_pos.y - SCREEN_HEIGHT // 2
         
-        # Clamp para no salir del mapa
+        # Aseguramos que la cámara no se salga del mapa
         target_x = max(0, min(target_x, self.map_width - SCREEN_WIDTH))
         target_y = max(0, min(target_y, self.map_height - SCREEN_HEIGHT))
         
-        # Interpolación suave (lerp)
+        # Movimiento suave mediante interpolación lineal
         self.offset_x += (target_x - self.offset_x) * CAMERA_SMOOTH * 4
         self.offset_y += (target_y - self.offset_y) * CAMERA_SMOOTH * 4
         
-        # Clamp final
+        # Reajuste final para evitar desbordamientos
         self.offset_x = max(0, min(self.offset_x, self.map_width - SCREEN_WIDTH))
         self.offset_y = max(0, min(self.offset_y, self.map_height - SCREEN_HEIGHT))
     
@@ -48,7 +50,7 @@ class Camera:
         )
     
     def apply_to_rect(self, rect):
-        """Aplica el offset de cámara a un rect."""
+        """Aplica el offset de cámara a un rectángulo dado."""
         return pygame.Rect(
             rect.x - int(self.offset_x),
             rect.y - int(self.offset_y),
@@ -57,9 +59,9 @@ class Camera:
         )
     
     def is_visible(self, world_x, world_y, margin=64):
-        """Verifica si un punto del mundo es visible en pantalla."""
-        sx, sy = self.world_to_screen(world_x, world_y)
+        """Verifica si un punto del mundo es visible en la pantalla."""
+        screen_x, screen_y = self.world_to_screen(world_x, world_y)
         return (
-            -margin <= sx <= SCREEN_WIDTH + margin and
-            -margin <= sy <= SCREEN_HEIGHT + margin
+            -margin <= screen_x <= SCREEN_WIDTH + margin and
+            -margin <= screen_y <= SCREEN_HEIGHT + margin
         )
