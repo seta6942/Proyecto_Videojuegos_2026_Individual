@@ -17,7 +17,7 @@ from src.settings import TILE_SIZE, COLOR_BACKGROUND
 from src.sprites import SpriteGenerator
 
 
-# ================ HELPERS ================
+# ================ FUNCIONES AUXILIARES ================
 
 class _SimpleRNG:
     def __init__(self, seed):
@@ -28,12 +28,14 @@ class _SimpleRNG:
 
 
 def _set(tiles, x, y, ch):
+    """Asigna un tile en la posición especificada."""
     H = len(tiles); W = len(tiles[0])
     if 0 <= x < W and 0 <= y < H:
         tiles[y][x] = ch
 
 
 def _fill_area(tiles, x, y, w, h, tile, only_on=None):
+    """Rellena un área rectangular con un tile específico."""
     H = len(tiles); W = len(tiles[0])
     for dy in range(h):
         for dx in range(w):
@@ -44,7 +46,7 @@ def _fill_area(tiles, x, y, w, h, tile, only_on=None):
 
 
 def _place_building(tiles, x, y, w, h, fill='4', wall='3'):
-    """Edificio rectangular sólido."""
+    """Genera un edificio rectangular con paredes y relleno."""
     H = len(tiles); W = len(tiles[0])
     for dy in range(h):
         for dx in range(w):
@@ -57,13 +59,13 @@ def _place_building(tiles, x, y, w, h, fill='4', wall='3'):
 
 
 def _place_stepped_building(tiles, x, y, sections):
-    """Edificio escalonado tipo Matemáticas: lista de [(dx, dy, w, h)]."""
+    """Crea un edificio escalonado con múltiples secciones."""
     for dx, dy, w, h in sections:
         _place_building(tiles, x+dx, y+dy, w, h)
 
 
 def _place_u_building(tiles, x, y, w, h, opening_w, opening_dir='S'):
-    """Edificio en U/C con la abertura en una dirección."""
+    """Genera un edificio en forma de U con abertura."""
     _place_building(tiles, x, y, w, h)
     ow = max(3, opening_w)
     ox = x + (w - ow)//2
@@ -83,10 +85,10 @@ def _place_u_building(tiles, x, y, w, h, opening_w, opening_dir='S'):
 
 
 def _place_t_building(tiles, cx, cy, arm_len=8, arm_thick=5, stem_len=10, stem_thick=6, dir='S'):
-    """Edificio en T o cruz: arm horizontal centrado en (cx,cy), stem hacia 'dir'."""
+    """Crea un edificio en forma de T."""
     # Brazo horizontal
     _place_building(tiles, cx - arm_len, cy - arm_thick//2, arm_len*2, arm_thick)
-    # Stem
+    # Stem vertical
     if dir == 'S':
         _place_building(tiles, cx - stem_thick//2, cy + arm_thick//2, stem_thick, stem_len)
     elif dir == 'N':
@@ -94,7 +96,7 @@ def _place_t_building(tiles, cx, cy, arm_len=8, arm_thick=5, stem_len=10, stem_t
 
 
 def _place_circle_plaza(tiles, cx, cy, r, tile='1'):
-    """Plaza adoquinada circular."""
+    """Genera una plaza circular con adoquines."""
     H = len(tiles); W = len(tiles[0])
     for dy in range(-r-1, r+2):
         for dx in range(-r-1, r+2):
@@ -106,6 +108,7 @@ def _place_circle_plaza(tiles, cx, cy, r, tile='1'):
 
 
 def _place_oval(tiles, cx, cy, rx, ry, tile_inner='5', tile_track='6', tile_access='2'):
+    """Crea un óvalo para el estadio."""
     H = len(tiles); W = len(tiles[0])
     for dy in range(-ry-3, ry+4):
         for dx in range(-rx-3, rx+4):
@@ -121,6 +124,7 @@ def _place_oval(tiles, cx, cy, rx, ry, tile_inner='5', tile_track='6', tile_acce
 
 
 def _fill_trees(tiles, x, y, w, h, only_on='01'):
+    """Coloca árboles en un área específica."""
     H = len(tiles); W = len(tiles[0])
     for dy in range(h):
         for dx in range(w):
@@ -130,6 +134,7 @@ def _fill_trees(tiles, x, y, w, h, only_on='01'):
 
 
 def _scatter_trees(tiles, x, y, w, h, density=0.4, seed=0):
+    """Dispone árboles aleatoriamente en un área."""
     rng = _SimpleRNG(seed)
     H = len(tiles); W = len(tiles[0])
     for dy in range(h):
@@ -141,6 +146,7 @@ def _scatter_trees(tiles, x, y, w, h, density=0.4, seed=0):
 
 
 def _line_bushes(tiles, x0, y0, x1, y1, every=2):
+    """Coloca arbustos en línea entre dos puntos."""
     n = max(abs(x1-x0), abs(y1-y0)) + 1
     for i in range(0, n, every):
         t = i/(n-1) if n > 1 else 0
@@ -152,6 +158,7 @@ def _line_bushes(tiles, x0, y0, x1, y1, every=2):
 
 
 def _organic_border(tiles, padding=3, irregularity=2, seed=0):
+    """Genera bordes orgánicos irregulares."""
     H = len(tiles); W = len(tiles[0])
     rng = _SimpleRNG(seed)
     for y in range(H):
@@ -171,6 +178,7 @@ def _organic_border(tiles, padding=3, irregularity=2, seed=0):
 
 
 def _tree_belt(tiles, density=0.6, seed=0):
+    """Crea un cinturón de árboles cerca de los bordes."""
     H = len(tiles); W = len(tiles[0])
     rng = _SimpleRNG(seed+999)
     for y in range(H):
@@ -194,30 +202,26 @@ def _build_level_1():
     W, H = 75, 58
     tiles = [['0']*W for _ in range(H)]
 
-    # ── AV. VENEZUELA: ancha vía multicarril al oeste (5 tiles asfalto)
+    # ── AV. VENEZUELA: vía principal multicarril al oeste
     for y in range(0, H):
         for dx in range(3, 9):
             tiles[y][dx] = '2'
-    # Líneas de carril (decorativo via tile 'P' alternado)
-    # (las pintaremos como overlay en draw)
 
-    # ── MURO PERIMETRAL DE CONCRETO largo (separa Av.Venezuela del campus)
+    # ── MURO PERIMETRAL (separa Av.Venezuela del campus)
     for y in range(2, H-2):
         tiles[y][10] = 'W'
         tiles[y][11] = 'W'
-    # Apertura: pequeña reja peatonal (decorativa, sigue siendo muro)
 
-    # ── PABELLÓN MATEMÁTICAS — masivo y alargado escalonado (vertical)
-    # Forma: 4 secciones conectadas con pequeños desfases (no rectángulo único)
+    # ── PABELLÓN MATEMÁTICAS (edificio escalonado)
     _place_stepped_building(tiles, 18, 8, [
-        (0,  0, 18,  8),   # bloque norte (más ancho)
-        (2,  8, 14, 10),   # bloque centro-norte
-        (0, 18, 18, 10),   # bloque centro (la principal aula magna)
-        (3, 28, 12,  9),   # bloque sur
-        (1, 37, 16,  7),   # ala sur ancha
+        (0,  0, 18,  8),
+        (2,  8, 14, 10),
+        (0, 18, 18, 10),
+        (3, 28, 12,  9),
+        (1, 37, 16,  7),
     ])
 
-    # Pasillo adoquinado frontal (lado este del pabellón)
+    # Pasillo adoquinado frontal (lado este)
     for y in range(7, 47):
         for dx in range(36, 40):
             tiles[y][dx] = '1'
@@ -227,39 +231,39 @@ def _build_level_1():
         for dx in range(13, 17):
             tiles[y][dx] = '1'
 
-    # ── PARQUE DE QUÍMICA al sur del pabellón (SPAWN)
+    # ── PARQUE DE QUÍMICA (punto de spawn)
     _fill_area(tiles, 18, 47, 22, 7, '1')
-    # arbustos de cobertura
+    # Arbustos de cobertura
     for x in (19, 24, 30, 36):
         tiles[48][x] = 'B'; tiles[51][x] = 'B'
-    # Bancos de árboles
+    # Árboles
     _fill_trees(tiles, 17, 46, 1, 8)
     _fill_trees(tiles, 39, 46, 1, 8)
 
-    # ── EDIF. 7 ELÉCTRICA / 8 INDUSTRIAL al este (más pequeños)
+    # ── EDIFICIOS 7 y 8 al este
     _place_building(tiles, 45, 12, 12, 7)
     _place_building(tiles, 45, 22, 12, 7)
     _place_building(tiles, 45, 32, 12, 7)
 
-    # Camino transversal este→ salida
+    # Camino transversal este → salida
     for x in range(40, W):
         tiles[24][x] = '1'; tiles[25][x] = '1'
 
-    # Arbustos cuadrados como cobertura
+    # Arbustos cuadrados
     for (bx, by) in [(42,16),(42,26),(42,36),(58,18),(58,28),(58,38)]:
         tiles[by][bx] = 'B'
 
-    # Árboles densos dispersos (copa grande para esconderse)
+    # Árboles dispersos
     _scatter_trees(tiles, 38, 6, 7, 6, 0.35, seed=101)
     _scatter_trees(tiles, 38, 40, 7, 8, 0.4, seed=102)
     _scatter_trees(tiles, 58, 5, 10, 6, 0.45, seed=103)
     _scatter_trees(tiles, 58, 42, 10, 10, 0.5, seed=104)
 
-    # Bordes orgánicos
+    # Bordes
     _organic_border(tiles, padding=2, irregularity=3, seed=11)
     _tree_belt(tiles, density=0.6, seed=11)
 
-    # ── SALIDA al Nivel 2 (este, después del borde)
+    # ── SALIDA al Nivel 2
     for y in range(22, 28):
         for x in range(W-7, W):
             tiles[y][x] = '2'
@@ -268,25 +272,19 @@ def _build_level_1():
 
     # Faroles
     lamps = []
-    # Av. Venezuela (postes alineados)
     for y in range(4, H, 6):
         lamps.append((6, y))
-    # Muro interior
     for y in range(6, H-4, 8):
         lamps.append((12, y))
-    # Pasillos del pabellón
     for y in range(10, 46, 7):
         lamps.append((37, y))
         lamps.append((44, y))
-    # Salida
     lamps += [(W-7, 23), (W-7, 26)]
-    # Parque de Química
     lamps += [(22, 50), (32, 50)]
 
-    spawn = (28, 50)  # parque de Química, sur del pabellón
+    spawn = (28, 50)
 
     guard_spawns = [
-        # 2 guardias (tutorial)
         {'zone': 1, 'patrol_tiles': [(37, 10), (37, 45), (38, 45), (38, 10)]},
         {'zone': 1, 'patrol_tiles': [(45, 24), (66, 24), (66, 25), (45, 25)]},
     ]
@@ -309,11 +307,10 @@ def _build_level_2():
     W, H = 80, 60
     tiles = [['0']*W for _ in range(H)]
 
-    # ── ESTADIO MONUMENTAL (mitad superior del óvalo en la parte INFERIOR del mapa)
-    # Centro abajo, así solo se ve la mitad superior
+    # ── ESTADIO MONUMENTAL (mitad superior visible)
     _place_oval(tiles, cx=40, cy=H+8, rx=30, ry=18)
 
-    # ── ESTACIONAMIENTO EN ABANICO (semicírculo) sobre el estadio
+    # ── ESTACIONAMIENTO (semicírculo sobre el estadio)
     cx_p, cy_p = 40, 30
     R_OUT, R_IN = 22, 10
     H2 = H; W2 = W
@@ -325,23 +322,20 @@ def _build_level_2():
                 if R_IN*R_IN <= d2 <= R_OUT*R_OUT:
                     tiles[ty][tx] = '2'
 
-    # ── COMEDOR UNIVERSITARIO arriba (2 bloques rectangulares masivos)
+    # ── COMEDOR UNIVERSITARIO
     _place_building(tiles, 8, 4, 22, 9)
     _place_building(tiles, 33, 4, 18, 8)
     _place_building(tiles, 54, 4, 20, 9)
-    # Pasillo entre comedores
     for x in range(8, 75):
         tiles[14][x] = '1'
 
-    # ── VÍAS VEHICULARES amplias conectando estacionamiento y comedor
+    # ── VÍAS VEHICULARES
     for y in range(14, 31):
         for dx in range(36, 45):
             tiles[y][dx] = '2'
-    # Vía perimetral este al estadio
     for y in range(20, 50):
         for dx in range(70, 75):
             tiles[y][dx] = '2'
-    # Vía perimetral oeste
     for y in range(20, 50):
         for dx in range(5, 9):
             tiles[y][dx] = '2'
@@ -350,7 +344,7 @@ def _build_level_2():
     for x in range(15, 70):
         tiles[18][x] = '1'
 
-    # Arbustos como cobertura entre estacionamiento y vía
+    # Arbustos de cobertura
     for x in (15, 22, 30, 50, 58, 65):
         tiles[28][x] = 'B'; tiles[29][x] = 'B'
 
@@ -363,12 +357,12 @@ def _build_level_2():
     _organic_border(tiles, padding=2, irregularity=3, seed=22)
     _tree_belt(tiles, density=0.55, seed=22)
 
-    # ENTRADA desde Nivel 1 (lado oeste) tras el borde
+    # ENTRADA desde Nivel 1
     for y in (24, 25, 26):
         for x in range(0, 9):
             tiles[y][x] = '1'
 
-    # SALIDA al Nivel 3 (lado norte-derecha) tras el borde
+    # SALIDA al Nivel 3
     for y in range(0, 6):
         for x in range(60, 68):
             tiles[y][x] = '2'
@@ -376,19 +370,15 @@ def _build_level_2():
         tiles[1][x] = 'E'; tiles[2][x] = 'E'
 
     lamps = []
-    # Estacionamiento (perímetro circular)
     for ang in range(180, 361, 30):
         a = math.radians(ang)
         lx = int(cx_p + (R_OUT-2) * math.cos(a))
         ly = int(cy_p + (R_OUT-2) * math.sin(a))
         if ly < cy_p: lamps.append((lx, ly))
-    # Comedor
     for x in range(10, 75, 8):
         lamps.append((x, 15))
-    # Vías perimetrales
     for y in range(22, 50, 7):
         lamps.append((6, y)); lamps.append((72, y))
-    # Salida y entrada
     lamps += [(63, 4), (5, 25), (63, 7)]
 
     spawn = (5, 25)
@@ -398,7 +388,6 @@ def _build_level_2():
         {'zone': 2, 'patrol_tiles': [(28, 25), (52, 25), (52, 26), (28, 26)]},
         {'zone': 2, 'patrol_tiles': [(70, 22), (70, 48), (72, 48), (72, 22)]},
     ]
-    # Autos en estacionamiento abanico (posiciones radiales)
     car_positions = []
     for i, ang in enumerate(range(195, 346, 22)):
         a = math.radians(ang)
@@ -424,12 +413,10 @@ def _build_level_3():
     W, H = 70, 58
     tiles = [['0']*W for _ in range(H)]
 
-    # ── PLAZA CÍVICA: gran círculo de adoquines al centro
+    # ── PLAZA CÍVICA (círculo de adoquines)
     PCX, PCY, PR = 35, 28, 12
     _place_circle_plaza(tiles, PCX, PCY, PR, tile='1')
-    # Estatua central
     _set(tiles, PCX, PCY, 'S')
-    # Anillo decorativo (arbustos cuadrados rodeando la plaza)
     for ang in range(0, 360, 25):
         a = math.radians(ang)
         bx = int(PCX + (PR+2) * math.cos(a))
@@ -437,21 +424,21 @@ def _build_level_3():
         if 0 < bx < W and 0 < by < H and tiles[by][bx] == '0':
             tiles[by][bx] = 'B'
 
-    # ── RECTORADO en forma de "U" abierta hacia la plaza (al NORTE)
+    # ── RECTORADO (forma de U)
     _place_u_building(tiles, 24, 4, 22, 11, opening_w=8, opening_dir='S')
 
-    # ── BIBLIOTECA CENTRAL: bloques rectangulares superpuestos irregulares (al SUR)
+    # ── BIBLIOTECA CENTRAL
     _place_building(tiles, 22, 42, 12, 8)
     _place_building(tiles, 30, 45, 14, 9)
     _place_building(tiles, 42, 42, 12, 7)
     _place_building(tiles, 26, 50, 8, 5)
 
-    # ── Av. Amézaga al este (vertical, asfalto)
+    # ── Av. Amézaga (este)
     for y in range(4, H-4):
         for dx in range(60, 64):
             tiles[y][dx] = '2'
 
-    # ── Edificios este (22 Med.Trop, 23 Psic, 24 Minas)
+    # ── Edificios este
     _place_building(tiles, 52, 6, 7, 6)
     _place_building(tiles, 52, 14, 7, 6)
     _place_building(tiles, 52, 22, 7, 6)
@@ -465,13 +452,12 @@ def _build_level_3():
             if 0 < tx < W and 0 < ty < H and tiles[ty][tx] == '0':
                 tiles[ty][tx] = '1'
 
-    # Camino adoquinado plaza→biblio
+    # Camino plaza → biblioteca
     for y in range(40, 55):
         tiles[y][PCX] = '1'; tiles[y][PCX+1] = '1'
 
-    # ── HUACA SAN MARCOS: zona arqueológica esquina noroeste (área verde con plataformas)
+    # ── HUACA SAN MARCOS
     _fill_area(tiles, 4, 6, 16, 14, '0')
-    # Plataformas de la huaca (dos bloques bajos)
     _place_building(tiles, 6, 9, 7, 5)
     _place_building(tiles, 12, 13, 7, 5)
     _scatter_trees(tiles, 4, 6, 16, 14, 0.3, seed=301)
@@ -483,12 +469,12 @@ def _build_level_3():
     _organic_border(tiles, padding=2, irregularity=3, seed=33)
     _tree_belt(tiles, density=0.55, seed=33)
 
-    # ENTRADA desde Nivel 2 (lado sur)
+    # ENTRADA desde Nivel 2
     for y in range(H-7, H):
         for x in range(30, 38):
             tiles[y][x] = '2'
 
-    # SALIDA al Nivel 4 (lado este)
+    # SALIDA al Nivel 4
     for y in range(26, 32):
         for x in range(W-7, W):
             tiles[y][x] = '2'
@@ -496,24 +482,18 @@ def _build_level_3():
         tiles[y][W-2] = 'E'; tiles[y][W-3] = 'E'
 
     lamps = []
-    # Plaza (4 cardinales)
     lamps += [(PCX, PCY-PR), (PCX, PCY+PR), (PCX-PR, PCY), (PCX+PR, PCY)]
-    # Esquinas plaza
     for ang in (45, 135, 225, 315):
         a = math.radians(ang)
         lamps.append((int(PCX + (PR-2)*math.cos(a)), int(PCY + (PR-2)*math.sin(a))))
-    # Av Amézaga
     for y in range(6, H-4, 7):
         lamps.append((58, y))
-    # Rectorado / Biblio
     lamps += [(28, 14), (40, 14), (28, 42), (45, 42)]
-    # Salida y entrada
     lamps += [(W-7, 27), (W-7, 30), (33, H-5)]
 
     spawn = (33, H-5)
 
     guard_spawns = [
-        # 3 guardias (zona 3)
         {'zone': 3, 'patrol_tiles': [(PCX-PR, PCY), (PCX+PR, PCY), (PCX+PR, PCY+1), (PCX-PR, PCY+1)]},
         {'zone': 3, 'patrol_tiles': [(28, 18), (42, 18), (42, 19), (28, 19)]},
         {'zone': 3, 'patrol_tiles': [(28, 40), (50, 40), (50, 41), (28, 41)]},
@@ -537,27 +517,24 @@ def _build_level_4():
     W, H = 65, 55
     tiles = [['0']*W for _ in range(H)]
 
-    # ── FAC. SISTEMAS en forma de CRUZ GRUESA / "T"
-    # Brazo horizontal grande + stem vertical hacia el norte
-    _place_building(tiles, 18, 16, 22, 8)   # brazo horizontal
-    _place_building(tiles, 25, 6, 8, 10)    # stem norte
-    _place_building(tiles, 26, 24, 6, 8)    # pequeño stem sur (cruz)
+    # ── FAC. SISTEMAS (forma de T)
+    _place_building(tiles, 18, 16, 22, 8)
+    _place_building(tiles, 25, 6, 8, 10)
+    _place_building(tiles, 26, 24, 6, 8)
 
-    # ── Edificios secundarios (Centro Informática, Educación, Clínica, Odonto)
-    _place_building(tiles, 6, 32, 11, 8)    # 17 Centro Info
-    _place_building(tiles, 19, 35, 10, 7)   # 18 Educación
-    _place_building(tiles, 32, 35, 10, 7)   # 16 Clínica
-    _place_building(tiles, 44, 6, 12, 9)    # 20 Odontología
+    # ── Edificios secundarios
+    _place_building(tiles, 6, 32, 11, 8)
+    _place_building(tiles, 19, 35, 10, 7)
+    _place_building(tiles, 32, 35, 10, 7)
+    _place_building(tiles, 44, 6, 12, 9)
 
-    # ── SENDEROS de concreto en DIAGONAL hacia la esquina inferior derecha (Puerta 7)
-    # Sendero diagonal 1: desde el centro hacia esquina SE
+    # ── SENDEROS en diagonal hacia Puerta 7
     for i in range(0, 30):
         tx = 30 + i
         ty = 25 + i
         if 0 <= tx < W-3 and 0 <= ty < H-3:
             tiles[ty][tx] = '1'
             if tx+1 < W: tiles[ty][tx+1] = '1'
-    # Sendero diagonal 2: desde Sistemas norte hacia SE
     for i in range(0, 25):
         tx = 22 + i
         ty = 24 + i
@@ -568,19 +545,17 @@ def _build_level_4():
     for x in range(8, 56):
         tiles[28][x] = '1'
 
-    # ── REJA PERIMETRAL en el este y sur
+    # ── REJA PERIMETRAL
     for y in range(2, H-2):
         tiles[y][W-3] = 'W'
     for x in range(2, W-2):
         tiles[H-3][x] = 'W'
 
-    # ── PUERTA 7 — gran portón vehicular y peatonal en esquina SE entreabierto
-    # Apertura en la reja (esquina inferior derecha)
+    # ── PUERTA 7
     for y in range(H-8, H-3):
-        tiles[y][W-3] = 'G'   # portón vehicular vertical
+        tiles[y][W-3] = 'G'
     for x in range(W-10, W-3):
-        tiles[H-3][x] = 'G'   # portón peatonal horizontal
-    # Asfalto exterior detrás (Calle Germán Amézaga)
+        tiles[H-3][x] = 'G'
     for y in range(H-8, H):
         for x in range(W-2, W):
             tiles[y][x] = '2'
@@ -588,48 +563,42 @@ def _build_level_4():
         for x in range(W-12, W):
             tiles[y][x] = '2'
 
-    # ── CÁMARAS de seguridad en paredes
-    _set(tiles, 18, 16, 'C')   # esquina NW Sistemas
-    _set(tiles, 39, 16, 'C')   # esquina NE Sistemas
+    # ── CÁMARAS de seguridad
+    _set(tiles, 18, 16, 'C')
+    _set(tiles, 39, 16, 'C')
     _set(tiles, 39, 23, 'C')
-    _set(tiles, 56, 6, 'C')    # esquina Odonto
-    _set(tiles, W-4, H-12, 'C')  # vigilando puerta 7
+    _set(tiles, 56, 6, 'C')
+    _set(tiles, W-4, H-12, 'C')
 
-    # Jardines irregulares con árboles densos y arbustos
+    # Jardines y árboles
     _scatter_trees(tiles, 4, 4, 12, 10, 0.4, seed=401)
     _scatter_trees(tiles, 4, 42, 50, 8, 0.35, seed=402)
     _scatter_trees(tiles, 42, 16, 4, 18, 0.4, seed=403)
-    # Arbustos cuadrados como cobertura cerca de Puerta 7
     for x in (40, 44, 48, 52):
         tiles[44][x] = 'B'; tiles[45][x] = 'B'
 
     _organic_border(tiles, padding=2, irregularity=2, seed=44)
     _tree_belt(tiles, density=0.5, seed=44)
 
-    # ENTRADA desde Nivel 3 (lado oeste) tras el borde
+    # ENTRADA desde Nivel 3
     for y in (27, 28, 29):
         for x in range(0, 9):
             tiles[y][x] = '1'
 
-    # PUERTA 7 sigue siendo 'G' tras el borde — re-asegura
+    # Asegurar Puerta 7
     for y in range(H-8, H-3):
         tiles[y][W-3] = 'G'
         tiles[y][W-2] = 'E'
 
     lamps = []
-    # Camino central
     for x in range(8, 56, 8):
         lamps.append((x, 28))
-    # Diagonal hacia Puerta 7 (faroles dorados intensos)
     for i in range(0, 30, 5):
         tx, ty = 30+i, 25+i
         if tx < W-3 and ty < H-3:
             lamps.append((tx, ty))
-    # Esquinas Sistemas
     lamps += [(18, 16), (39, 16), (25, 24), (32, 24)]
-    # Cerca de Puerta 7 (intensos)
     lamps += [(W-5, H-6), (W-5, H-9), (W-7, H-4)]
-    # Entrada oeste
     lamps += [(4, 28), (10, 28)]
 
     spawn = (5, 28)
@@ -714,10 +683,12 @@ class ProceduralMap:
         self.car_positions = [self._tile_to_pixel(tx, ty) for tx, ty in self._car_tiles]
 
     def _tile_to_pixel(self, tx, ty):
+        """Convierte coordenadas de tile a píxeles."""
         ts = self.tile_size
         return pygame.math.Vector2(tx*ts + ts//2, ty*ts + ts//2)
 
     def _get_tile_surface(self, ch):
+        """Obtiene la superficie para un tile específico."""
         if ch in self._tile_cache:
             return self._tile_cache[ch]
         if ch == 'X':
@@ -735,27 +706,26 @@ class ProceduralMap:
         return surf
 
     def _render(self):
+        """Renderiza el mapa completo en una superficie."""
         surf = pygame.Surface((self.pixel_width, self.pixel_height))
         surf.fill(COLOR_BACKGROUND)
         ts = self.tile_size
         for ry, row in enumerate(self.tiles):
             for rx, ch in enumerate(row):
                 surf.blit(self._get_tile_surface(ch), (rx*ts, ry*ts))
-        # Overlays decorativos sobre el render base
         self._draw_overlays(surf)
         self._draw_zone_labels(surf)
         return surf
 
     def _draw_overlays(self, surf):
+        """Dibuja overlays decorativos sobre el mapa."""
         ts = self.tile_size
         for ov in self._overlays:
             if ov == 'venezuela_lanes':
-                # Líneas blancas centrales de Av. Venezuela (en x=6 columna)
                 for y in range(0, self.pixel_height, 24):
                     pygame.draw.rect(surf, (200, 200, 200),
                                      (6*ts + 14, y+4, 4, 14))
             elif ov == 'parking_diagonals':
-                # Líneas blancas diagonales en el estacionamiento abanico
                 cx_p, cy_p = 40*ts, 30*ts
                 for ang in range(180, 361, 12):
                     a = math.radians(ang)
@@ -764,17 +734,14 @@ class ProceduralMap:
                     if y1 <= cy_p + 4 and y2 <= cy_p + 4:
                         pygame.draw.line(surf, (220, 220, 220), (x1, y1), (x2, y2), 2)
             elif ov == 'stadium_lines':
-                # Líneas del campo del estadio (en la mitad visible)
                 cx, cy = 40*ts, (self.height+8)*ts
                 for ry in (-13, -7, 0):
                     pygame.draw.ellipse(surf, (200, 200, 200),
                                         (cx-28*ts, cy+ry*ts-2, 56*ts, 4), 1)
             elif ov == 'plaza_circle':
-                # Círculos concéntricos decorativos en la Plaza Cívica
                 pcx, pcy = 35*ts, 28*ts
                 for r in (4*ts, 8*ts, 11*ts):
                     pygame.draw.circle(surf, (90, 80, 70), (pcx, pcy), r, 2)
-                # Cruz radial
                 for ang in (0, 90, 180, 270):
                     a = math.radians(ang)
                     pygame.draw.line(surf, (90, 80, 70),
@@ -782,7 +749,6 @@ class ProceduralMap:
                                      (pcx + int(11*ts*math.cos(a)),
                                       pcy + int(11*ts*math.sin(a))), 2)
             elif ov == 'puerta7_glow':
-                # Halo dorado intenso alrededor de la Puerta 7
                 px = (self.width-3)*ts + ts//2
                 py = (self.height-6)*ts + ts//2
                 glow = pygame.Surface((10*ts, 10*ts), pygame.SRCALPHA)
@@ -793,6 +759,7 @@ class ProceduralMap:
                 surf.blit(glow, (px - 5*ts, py - 5*ts), special_flags=pygame.BLEND_RGB_ADD)
 
     def _draw_zone_labels(self, surf):
+        """Dibuja etiquetas de zonas en el mapa."""
         font = pygame.font.SysFont('monospace', 11, bold=True)
         ts = self.tile_size
         title = font.render(self.level_name, True, (255, 230, 130))
@@ -839,6 +806,7 @@ class ProceduralMap:
             surf.blit(t, (tx*ts, ty*ts))
 
     def _build_collision(self):
+        """Construye los rectángulos de colisión."""
         rects = []
         ts = self.tile_size
         for ry, row in enumerate(self.tiles):
@@ -848,10 +816,12 @@ class ProceduralMap:
         return rects
 
     def _get_lamp_positions(self):
+        """Obtiene las posiciones de los faroles en píxeles."""
         ts = self.tile_size
         return [(lx*ts + ts//2, ly*ts + ts//2) for lx, ly in self.lamp_tile_positions]
 
     def _get_exit_rect(self):
+        """Obtiene el rectángulo de salida del nivel."""
         ts = self.tile_size
         exits = []
         for ry, row in enumerate(self.tiles):
@@ -865,6 +835,7 @@ class ProceduralMap:
         return pygame.Rect(0, 0, 1, 1)
 
     def _compile_guard_spawns(self):
+        """Compila los datos de spawn de guardias."""
         ts = self.tile_size
         result = []
         for s in self._guard_spawn_tiles:
@@ -878,10 +849,12 @@ class ProceduralMap:
         return result
 
     def draw(self, screen, camera):
+        """Dibuja el mapa en la pantalla con la cámara aplicada."""
         ox, oy = camera.get_offset()
         screen.blit(self.surface, (ox, oy))
 
     def get_tile_at(self, world_x, world_y):
+        """Obtiene el tipo de tile en una posición del mundo."""
         tx = int(world_x // self.tile_size)
         ty = int(world_y // self.tile_size)
         if 0 <= tx < self.width and 0 <= ty < self.height:
@@ -889,7 +862,9 @@ class ProceduralMap:
         return 'X'
 
     def get_zone_at(self, world_x, world_y):
+        """Obtiene la zona en una posición del mundo."""
         return self.level_number
 
     def is_final_level(self):
+        """Verifica si es el último nivel."""
         return self.level_number >= total_levels()
