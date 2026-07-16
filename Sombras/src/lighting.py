@@ -17,24 +17,23 @@ class LightingSystem:
         self.screen_width = screen_width
         self.screen_height = screen_height
 
-        # Capa de luz: se rellena con el ambiente nocturno (gris azulado)
-        # y luego se le SUMAN las luces para crear puntos brillantes.
-        # Al final se aplica con BLEND_RGBA_MULT sobre la pantalla.
+        # Capa de iluminación: se inicializa con el ambiente nocturno
+        # y luego se le suman las luces para crear puntos brillantes.
+        # Se aplica con BLEND_RGBA_MULT sobre la pantalla.
         self.light_surface = pygame.Surface((screen_width, screen_height))
 
-        # Cache de gradientes radiales (por radio + color) para no
-        # generarlos cada frame.
+        # Caché de gradientes radiales para optimizar rendimiento
         self._gradient_cache = {}
 
-        # Animación de faroles (parpadeo suave, individual)
+        # Animación de parpadeo de faroles
         self.flicker_timer = 0.0
         self.flicker_phases = {}
 
     def render(self, screen, camera, lamp_positions, player_pos, global_alert):
-        """Renderiza el sistema de iluminación nocturna."""
+        """Aplica el sistema de iluminación nocturna a la pantalla."""
         self.flicker_timer += 0.016  # ~60fps
 
-        # 1) Ambiente nocturno: ligeramente más oscuro si la alerta es alta
+        # 1) Configurar iluminación ambiente (más oscura si alerta alta)
         ar, ag, ab = NIGHT_AMBIENT
         if global_alert >= ALERT_HIGH_THRESHOLD:
             ar = max(40, ar - 15)
@@ -42,12 +41,12 @@ class LightingSystem:
             ab = max(60, ab - 15)
         self.light_surface.fill((ar, ag, ab))
 
-        # 2) Linterna del jugador (cálida, fuerte)
+        # 2) Luz de la linterna del jugador (tono cálido)
         player_sx, player_sy = camera.world_to_screen(player_pos.x, player_pos.y)
         self._add_light(player_sx, player_sy, PLAYER_LIGHT_RADIUS,
                         (220, 210, 180))
 
-        # 3) Faroles del campus (anaranjados, parpadeo sutil)
+        # 3) Luces de los faroles del campus (con parpadeo sutil)
         for lx, ly in lamp_positions:
             sx, sy = camera.world_to_screen(lx, ly)
             if (-LAMP_RADIUS <= sx <= self.screen_width + LAMP_RADIUS and
@@ -60,12 +59,12 @@ class LightingSystem:
                 radius = int(LAMP_RADIUS * flicker)
                 self._add_light(sx, sy, radius, (255, 190, 110))
 
-        # 4) Aplicar la capa de luz al mapa (multiplicación)
+        # 4) Aplicar la capa de luz al mapa mediante multiplicación
         screen.blit(self.light_surface, (0, 0),
                     special_flags=pygame.BLEND_RGBA_MULT)
 
     def _add_light(self, cx, cy, radius, color):
-        """Suma un gradiente radial de luz a la capa de iluminación."""
+        """Añade un punto de luz con gradiente radial a la capa."""
         if radius <= 0:
             return
         grad = self._get_gradient(radius, color)
@@ -75,7 +74,7 @@ class LightingSystem:
         )
 
     def _get_gradient(self, radius, color):
-        """Devuelve (con caché) un círculo con gradiente del centro al borde."""
+        """Genera (con caché) un gradiente circular para la luz."""
         key = (radius, color)
         if key in self._gradient_cache:
             return self._gradient_cache[key]
@@ -84,15 +83,14 @@ class LightingSystem:
         surf = pygame.Surface((size, size))
         surf.set_colorkey((0, 0, 0))
         cr, cg, cb = color
-        # Dibujamos círculos concéntricos del más grande (tenue) al más
-        # pequeño (intenso), creando un gradiente suave.
+        # Crear gradiente mediante círculos concéntricos
         steps = max(8, radius // 4)
         for i in range(steps, 0, -1):
             ratio = i / steps
             r = int(radius * ratio)
             if r <= 0:
                 continue
-            # intensidad cae cuadráticamente hacia el borde
+            # Intensidad decrece cuadráticamente hacia el borde
             intensity = (1.0 - ratio) ** 1.6
             ir = int(cr * intensity)
             ig = int(cg * intensity)
@@ -102,7 +100,7 @@ class LightingSystem:
         return surf
 
     def render_lamppost(self, screen, camera, lamp_positions):
-        """Dibuja el poste del farol visible (sprite simple)."""
+        """Dibuja los postes de los faroles visibles."""
         for lx, ly in lamp_positions:
             sx, sy = camera.world_to_screen(int(lx), int(ly))
             if -20 <= sx <= self.screen_width + 20 and -20 <= sy <= self.screen_height + 20:
@@ -110,5 +108,5 @@ class LightingSystem:
                 pygame.draw.line(screen, (90, 90, 95), (sx, sy), (sx, sy + 22), 2)
                 # Cabeza del farol
                 pygame.draw.ellipse(screen, (210, 170, 70), (sx - 6, sy - 4, 12, 6))
-                # Bombilla (siempre visible)
+                # Bombilla luminosa
                 pygame.draw.circle(screen, (255, 220, 130), (sx, sy - 1), 3)
