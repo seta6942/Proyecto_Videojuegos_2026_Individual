@@ -9,33 +9,36 @@ from src.sprites import SpriteGenerator
 
 class Player:
     def __init__(self, x, y, sprite_gen):
+        # Posición y movimiento
         self.pos = pygame.math.Vector2(x, y)
         self.vel = pygame.math.Vector2(0, 0)
-        self.direction = 0  # Ángulo en grados (0=arriba, 90=derecha, y respectivamnte "referencia")
+        self.direction = 0  # Ángulo en grados (0=arriba, 90=derecha)
         self.facing = 'down'  
         
+        # Estados del jugador
         self.state = 'idle'      
         self.is_sneaking = False
         self.is_hiding = False
         self.is_sprinting = False
         
+        # Velocidad base
         self.speed = PLAYER_SPEED
         
-        # Stones inventory
+        # Inventario de piedras
         self.stones = STONE_MAX
         self.stone_throw_cooldown = 0
         
-        # Animación
+        # Sistema de animación
         self.anim_frame = 0
         self.anim_timer = 0
         self.anim_speed = 0.12  # segundos por frame
         self.walk_frames = 4
         
-        # Sprites
+        # Sprites del jugador
         self.sprites = sprite_gen.get_player_sprites()
         self.current_sprite = self.sprites['down'][0]
         
-        # Hitbox
+        # Hitbox y colisión
         self.radius = PLAYER_SIZE
         self.rect = pygame.Rect(
             int(self.pos.x) - self.radius,
@@ -44,18 +47,19 @@ class Player:
             self.radius * 2
         )
         
-        # Estado de visibilidad/detección
+        # Detección y sigilo
         self.is_visible_to_guard = False
         self.noise_level = 0.0   # 0=silencioso, 1=máximo ruido
         
-        # Efectos
+        # Efectos temporales
         self.hide_timer = 0
         self.footstep_timer = 0
 
     def handle_input(self, keys):
+        """Procesa la entrada del teclado para el movimiento."""
         dx, dy = 0, 0
         
-        # WASD / Flechas
+        # Movimiento con WASD o Flechas
         if keys[pygame.K_w] or keys[pygame.K_UP]:
             dy = -1
             self.facing = 'up'
@@ -69,14 +73,13 @@ class Player:
             dx = 1
             self.facing = 'right'
             
-        # Diagonal normalizada
+        # Normalizar movimiento diagonal
         if dx != 0 and dy != 0:
             dx *= 0.707
             dy *= 0.707
             
-        # Shift = sigilo
+        # Modificadores de movimiento
         self.is_sneaking = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
-        # Ctrl = sprint (ruidoso)
         self.is_sprinting = (keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL]) and not self.is_sneaking
         
         # Velocidad según estado
@@ -100,10 +103,11 @@ class Player:
         self.vel.y = dy * speed
 
     def update(self, dt, collision_rects):
-        # Movimiento con colisión
+        """Actualiza la posición, animación y estado del jugador."""
+        # Movimiento con detección de colisiones
         new_pos = self.pos + self.vel
         
-        # Check colisiones X
+        # Colisiones en eje X
         test_rect_x = pygame.Rect(
             new_pos.x - self.radius,
             self.pos.y - self.radius,
@@ -118,7 +122,7 @@ class Player:
         if not col_x:
             self.pos.x = new_pos.x
             
-        # Check colisiones Y
+        # Colisiones en eje Y
         test_rect_y = pygame.Rect(
             self.pos.x - self.radius,
             new_pos.y - self.radius,
@@ -133,11 +137,11 @@ class Player:
         if not col_y:
             self.pos.y = new_pos.y
             
-        # Actualizar rect
+        # Actualizar hitbox
         self.rect.x = int(self.pos.x) - self.radius
         self.rect.y = int(self.pos.y) - self.radius
         
-        # Animación
+        # Actualizar animación
         if self.vel.length() > 0.1:
             self.anim_timer += dt
             if self.anim_timer >= self.anim_speed:
@@ -147,7 +151,7 @@ class Player:
             self.anim_frame = 0
             self.anim_timer = 0
             
-        # Actualizar sprite
+        # Seleccionar sprite según estado
         if self.is_sneaking:
             key = self.facing + '_sneak'
         elif self.is_sprinting:
@@ -159,12 +163,12 @@ class Player:
         frame_idx = self.anim_frame % len(frames)
         self.current_sprite = frames[frame_idx]
         
-        # Cooldown piedra
+        # Enfriamiento de lanzamiento de piedras
         if self.stone_throw_cooldown > 0:
             self.stone_throw_cooldown -= dt
 
     def throw_stone(self, world_target_x, world_target_y):
-        """Lanza una piedra hacia el punto dado. Retorna la posición de impacto si tiene piedras."""
+        """Lanza una piedra hacia el punto indicado. Retorna posición de impacto."""
         if self.stones <= 0 or self.stone_throw_cooldown > 0:
             return None
             
@@ -189,19 +193,20 @@ class Player:
         return pygame.math.Vector2(impact_x, impact_y)
 
     def draw(self, screen, camera):
+        """Renderiza al jugador en la pantalla."""
         sx, sy = camera.world_to_screen(int(self.pos.x), int(self.pos.y))
         
-        # Dibujar sombra
+        # Sombra del jugador
         if not self.is_hiding:
             shadow_surf = pygame.Surface((28, 10), pygame.SRCALPHA)
             pygame.draw.ellipse(shadow_surf, (0, 0, 0, 80), (0, 0, 28, 10))
             screen.blit(shadow_surf, (sx - 14, sy + 10))
             
-        # Dibujar sprite centrado
+        # Sprite centrado
         sprite_rect = self.current_sprite.get_rect(center=(sx, sy))
         
         if self.is_hiding:
-            # Mostrar semitransparente si está oculto
+            # Semitransparente si está oculto
             temp = self.current_sprite.copy()
             temp.set_alpha(120)
             screen.blit(temp, sprite_rect)
@@ -213,6 +218,7 @@ class Player:
             pygame.draw.circle(screen, (0, 200, 255, 100), (sx, sy - 20), 5)
 
     def get_world_rect(self):
+        """Retorna el rectángulo de colisión en coordenadas del mundo."""
         return pygame.Rect(
             int(self.pos.x) - self.radius,
             int(self.pos.y) - self.radius,
