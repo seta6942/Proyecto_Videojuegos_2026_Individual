@@ -15,17 +15,19 @@ class SpriteGenerator:
         self._drone_sprites = None
         self._tile_sprites = {}
         
-        # Uso la ruta de sprites definida en settings.py
+        # Ruta base de sprites desde settings
         self.sprites_dir = SPRITES_DIR
 
-    # --- CARGA DE PERSONAJES ---
+    # --- CARGA DE SPRITES DE PERSONAJES ---
 
     def get_player_sprites(self):
+        """Retorna los sprites del jugador."""
         if self._player_sprites is None:
             self._player_sprites = self._load_character_sprites('player')
         return self._player_sprites
 
     def get_guard_sprites(self):
+        """Retorna los sprites de los guardias."""
         if self._guard_sprites is None:
             self._guard_sprites = self._load_character_sprites('guard')
         return self._guard_sprites
@@ -51,7 +53,7 @@ class SpriteGenerator:
                     if os.path.exists(sneak_file):
                         sneak_frames.append(self._load_image_or_fallback(sneak_file))
                     else:
-                        # Fallback encogiendo la imagen normal
+                        # Fallback: encoger la imagen normal
                         w, h = normal_img.get_size()
                         sneak_img = pygame.transform.scale(normal_img, (w, int(h * 0.75)))
                         sneak_surf = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -60,7 +62,7 @@ class SpriteGenerator:
 
                 sprites[facing] = frames
                 sprites[f"{facing}_sneak"] = sneak_frames
-                sprites[f"{facing}_sprint"] = frames # Usa normal para sprint si no hay imagen
+                sprites[f"{facing}_sprint"] = frames  # Sprint usa frames normales
 
         # GUARDIA: Formato down_0_patrol.png, down_0_chase.png, etc.
         elif character_folder == 'guard':
@@ -75,14 +77,14 @@ class SpriteGenerator:
 
         return sprites
 
-    # --- CARGA DE PROPS ---
+    # --- CARGA DE PROPS Y OBJETOS ---
 
     def get_drone_sprites(self):
         """Carga la animación del dron (drone_0.png, drone_1.png)."""
         if self._drone_sprites is None:
             self._drone_sprites = []
             prop_path = os.path.join(self.sprites_dir, 'props')
-            for phase in range(2): # drone_0.png y drone_1.png
+            for phase in range(2):  # drone_0.png y drone_1.png
                 filepath = os.path.join(prop_path, f"drone_{phase}.png")
                 self._drone_sprites.append(self._load_image_or_fallback(filepath))
         return self._drone_sprites
@@ -93,7 +95,7 @@ class SpriteGenerator:
         return self._load_image_or_fallback(filepath)
 
     def _load_image_or_fallback(self, filepath, size=(32, 32)):
-        """Carga una imagen o devuelve un cuadro morado si no existe."""
+        """Carga una imagen o devuelve un cuadro morado de respaldo."""
         if os.path.exists(filepath):
             try:
                 img = pygame.image.load(filepath).convert_alpha()
@@ -101,17 +103,18 @@ class SpriteGenerator:
             except pygame.error:
                 pass
         
+        # Fallback: cuadrado morado con borde blanco
         fallback = pygame.Surface(size, pygame.SRCALPHA)
         fallback.fill((150, 0, 150, 180))
         pygame.draw.rect(fallback, (255, 255, 255), fallback.get_rect(), 2)
         return fallback
 
     # =========================================================================
-    # TILES DEL MAPA (Código original restaurado completo)
+    # GENERACIÓN DE TILES DEL MAPA
     # =========================================================================
 
     def get_tile(self, tile_type):
-        """Retorna un tile pixel art para el tipo dado."""
+        """Retorna un tile pixel art para el tipo especificado."""
         if tile_type in self._tile_sprites:
             return self._tile_sprites[tile_type]
             
@@ -120,7 +123,7 @@ class SpriteGenerator:
         return tile
         
     def _create_tile(self, tile_type):
-        """Crea un tile 32x32 para el tipo especificado."""
+        """Crea un tile de 32x32 píxeles para el tipo indicado."""
         size = 32
         surf = pygame.Surface((size, size))
         
@@ -136,7 +139,7 @@ class SpriteGenerator:
         elif tile_type == 'path':
             surf.fill((55, 48, 40))
             pygame.draw.rect(surf, (65, 58, 50), (1, 1, 30, 30))
-            # Textura adoquín
+            # Textura de adoquín
             for gy in range(0, 32, 8):
                 pygame.draw.line(surf, (40, 35, 28), (0, gy), (32, gy), 1)
             for gx in range(0, 32, 8):
@@ -158,7 +161,7 @@ class SpriteGenerator:
             
         elif tile_type == 'building_wall':
             surf.fill((70, 60, 80))
-            # Textura ladrillo
+            # Textura de ladrillos
             for gy in range(0, 32, 8):
                 offset_x = (gy // 8 % 2) * 4
                 for gx in range(-offset_x, 32, 8):
@@ -174,7 +177,7 @@ class SpriteGenerator:
                 
         elif tile_type == 'stadium_grass':
             surf.fill((35, 70, 35))
-            # Líneas del campo
+            # Líneas del campo de fútbol
             for i in range(0, 32, 6):
                 alpha = 255 if (i // 6 % 2 == 0) else 180
                 color = (45, 90, 45) if (i // 6 % 2 == 0) else (30, 60, 30)
@@ -193,7 +196,7 @@ class SpriteGenerator:
             surf.fill((25, 50, 20))
             # Tronco
             pygame.draw.rect(surf, (60, 40, 20), (13, 18, 6, 10))
-            # Copa
+            # Copa del árbol
             pygame.draw.circle(surf, (20, 80, 20), (16, 14), 12)
             pygame.draw.circle(surf, (30, 100, 30), (13, 12), 7)
             pygame.draw.circle(surf, (15, 65, 15), (20, 15), 6)
@@ -206,14 +209,14 @@ class SpriteGenerator:
                 pygame.draw.rect(surf, (80, 70, 60), (fx, 8, 3, 18))
                 
         elif tile_type == 'concrete_wall':
-            # Muro perimetral de concreto sólido
+            # Muro perimetral de concreto
             surf.fill((100, 100, 105))
             pygame.draw.rect(surf, (75, 75, 80), (0, 0, 32, 32), 2)
             pygame.draw.line(surf, (60, 60, 65), (0, 16), (32, 16), 1)
             pygame.draw.line(surf, (60, 60, 65), (16, 0), (16, 32), 1)
             
         elif tile_type == 'bush':
-            # Arbusto cuadrado denso (cobertura)
+            # Arbusto cuadrado denso para cobertura
             surf.fill((25, 50, 20))
             pygame.draw.rect(surf, (20, 65, 25), (3, 3, 26, 26))
             pygame.draw.rect(surf, (15, 55, 18), (3, 3, 26, 26), 2)
@@ -222,7 +225,7 @@ class SpriteGenerator:
                     pygame.draw.circle(surf, (30, 80, 30), (px, py), 2)
                     
         elif tile_type == 'gate':
-            # Portón de Puerta 7 entreabierto, dorado
+            # Portón Puerta 7 (dorado, entreabierto)
             surf.fill((25, 25, 30))
             pygame.draw.rect(surf, (160, 130, 60), (0, 6, 32, 4))
             pygame.draw.rect(surf, (160, 130, 60), (0, 22, 32, 4))
@@ -241,7 +244,7 @@ class SpriteGenerator:
             pygame.draw.circle(surf, (255, 150, 150), (15, 15), 1)
             
         elif tile_type == 'statue':
-            # Base de estatua de piedra
+            # Estatua de piedra sobre base
             surf.fill((55, 48, 40))
             pygame.draw.rect(surf, (140, 130, 120), (8, 8, 16, 16))
             pygame.draw.rect(surf, (90, 85, 80), (8, 8, 16, 16), 2)
@@ -249,18 +252,18 @@ class SpriteGenerator:
             pygame.draw.circle(surf, (180, 170, 160), (16, 6), 3)
             
         elif tile_type == 'parking_line':
-            # Asfalto con línea de cajón blanca (diagonal-friendly)
+            # Asfalto con línea de estacionamiento
             surf.fill((35, 35, 40))
             pygame.draw.line(surf, (200, 200, 200), (0, 28), (32, 4), 2)
             
         elif tile_type == 'roof':
-            # Techo plano elevado de edificio
+            # Techo plano de edificio
             surf.fill((85, 75, 95))
             pygame.draw.rect(surf, (65, 55, 75), (0, 0, 32, 32), 1)
             pygame.draw.line(surf, (105, 95, 115), (0, 8), (32, 8), 1)
             pygame.draw.line(surf, (105, 95, 115), (0, 24), (32, 24), 1)
             
-        else:  # default
+        else:  # Tile por defecto
             surf.fill((20, 35, 15))
             
         return surf
