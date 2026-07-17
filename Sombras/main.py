@@ -19,6 +19,7 @@ from src.game import Game
 
 
 def main():
+    """Función principal que inicializa y ejecuta el juego."""
     game = Game()
     game.run()
 
