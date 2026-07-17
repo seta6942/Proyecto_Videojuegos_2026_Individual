@@ -10,7 +10,8 @@ from src.settings import *
 
 class TileMap:
     def __init__(self, filename, level_number):
-        # Carga el archivo TMX utilizando la librería pytmx
+        """Carga un mapa TMX y configura sus propiedades."""
+        # Cargar archivo TMX con pytmx
         self.tmx_data = pytmx.load_pygame(filename, pixelalpha=True)
         self.width = self.tmx_data.width * self.tmx_data.tilewidth
         self.height = self.tmx_data.height * self.tmx_data.tileheight
@@ -18,11 +19,11 @@ class TileMap:
         self.tileheight = self.tmx_data.tileheight
         self.level_number = level_number
         
-        # Atributos de compatibilidad requeridos por la cámara en game.py
+        # Propiedades de compatibilidad para la cámara
         self.pixel_width = self.width
         self.pixel_height = self.height
         
-        # Configuración dinámica de nombres de nivel y pistas
+        # Nombres y pistas de cada nivel
         nombres_niveles = {
             1: "Facultad de Ciencias Matemáticas",
             2: "Zona de Control 2: Comedor Universitario / Estadio",
@@ -39,6 +40,7 @@ class TileMap:
         self.level_name = nombres_niveles.get(level_number, f"Zona Universitaria {level_number}")
         self.level_hint = hints_niveles.get(level_number, "Muévete con sigilo y vigila las rutas de las patrullas.")
         
+        # Listas de elementos del mapa
         self.collision_rects = []
         self.lamp_positions = []
         self.spawn_point = pygame.math.Vector2(80, 700)
@@ -48,7 +50,7 @@ class TileMap:
         self.guard_spawns = []
         self.drone_spawns = []  
         
-        # Cargar primero las colisiones para el correcto funcionamiento del radar
+        # Cargar capas y objetos
         self._load_collision_layer()
         self._load_objects()
         
@@ -56,10 +58,11 @@ class TileMap:
         self.surface = self._render_map()
     
     def _calculate_smart_patrol(self, start_x, start_y):
-        """Calcula una ruta inteligente para la patrulla evitando paredes."""
+        """Calcula una ruta de patrulla inteligente evitando obstáculos."""
         ts = self.tilewidth
         max_tiles = 5
         
+        # Buscar espacio disponible a la derecha
         espacio_derecha = 0
         for i in range(1, max_tiles + 1):
             check_x = start_x + (i * ts)
@@ -71,6 +74,7 @@ class TileMap:
         if espacio_derecha >= 2:
             return [(start_x, start_y), (start_x + (espacio_derecha * ts), start_y)]
             
+        # Buscar espacio disponible hacia abajo
         espacio_abajo = 0
         for i in range(1, max_tiles + 1):
             check_y = start_y + (i * ts)
@@ -82,10 +86,11 @@ class TileMap:
         if espacio_abajo >= 2:
             return [(start_x, start_y), (start_x, start_y + (espacio_abajo * ts))]
             
+        # Ruta por defecto
         return [(start_x, start_y), (start_x + ts, start_y)]
 
     def _load_collision_layer(self):
-        """Filtra y extrae los rectángulos de colisión tolerando mayúsculas y acentos."""
+        """Extrae los rectángulos de colisión de las capas del mapa."""
         nombres_validos = ['collision', 'colision', 'colisión']
         for layer in self.tmx_data.layers:
             if hasattr(layer, 'name'):
@@ -101,7 +106,7 @@ class TileMap:
                             self.collision_rects.append(rect)
 
     def _load_objects(self):
-        """Procesa los puntos lógicos de spawn creados en Tiled."""
+        """Procesa los objetos y puntos de spawn definidos en Tiled."""
         if hasattr(self.tmx_data, 'objectgroups'):
             for og in self.tmx_data.objectgroups:
                 for obj in og:
@@ -135,7 +140,7 @@ class TileMap:
                         })
     
     def _render_map(self):
-        """Pinta ABSOLUTAMENTE TODAS las capas visibles, incluyendo tus paredes."""
+        """Renderiza todas las capas visibles del mapa en una superficie."""
         surface = pygame.Surface((self.width, self.height))
         surface.fill(COLOR_BACKGROUND)
         
@@ -149,21 +154,25 @@ class TileMap:
         return surface
     
     def draw(self, screen, camera):
+        """Dibuja el mapa en la pantalla aplicando el offset de cámara."""
         offset = camera.get_offset()
         screen.blit(self.surface, offset)
     
     def get_collision_rects(self):
+        """Retorna la lista de rectángulos de colisión."""
         return self.collision_rects
     
     def get_zone_at(self, world_x, world_y):
+        """Retorna el número de zona en una posición del mundo."""
         return self.level_number
         
     def is_final_level(self):
+        """Verifica si es el nivel final del juego."""
         return self.level_number == 4
 
     def is_solid(self, world_x, world_y):
+        """Determina si una posición del mundo es sólida."""
         for rect in self.collision_rects:
             if rect.collidepoint(world_x, world_y):
                 return True
         return False
-#SETA
