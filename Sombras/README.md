@@ -10,7 +10,7 @@
 ## Cómo ejecutar
 
 ```bash
-cd game
+cd Sombras
 python main.py
 ```
 
